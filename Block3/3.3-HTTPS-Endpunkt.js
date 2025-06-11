@@ -22,11 +22,40 @@ app.get("/name", (req, res) => {
 
 app.get("/html", (req, res) => {
     fs.readFile("website.html", "utf8", (err, data) => {
-        if (err) {
-            res.status(500).send("Datei konnte nicht gelesen werden.")
-        }
         res.send(data)
     })
+})
+
+app.get("/image", (req, res) => {
+    fs.readFile("image.png", function(err, image){
+        res.writeHead(200, {"Content-Type": "image/png"});
+        res.end(image);
+    })
+})
+
+app.get("/teapot", (req, res) => {
+    res.status(418).send("I am a Teapot")
+})
+
+app.get("/user-agent", (req, res) => {
+    res.send(req.headers["sec-ch-ua"].split(";")[0])
+})
+
+app.get("/secret", (req, res) => {
+    res.status(403)
+})
+
+app.get("/xml", (req, res) => {
+    fs.readFile("file.xml", (err, data) => {
+        res.set("Content-Type", "application/xml")
+        res.send(data.toString().trim());
+    })
+})
+
+app.get("/me", (req, res) => {
+    res.set("Content-Type", "application/json")
+    const json = ({"name": "Rafael", "wohnort": "Zürich"})
+    res.send(json);
 })
 
 app.listen(port, () => {
