@@ -1,6 +1,6 @@
 import express from "express";
+import session from "express-session";
 import {v4 as uuidv4} from 'uuid';
-import swaggerUI from 'swagger-ui-express'
 const app = express()
 const port = 3000
 
@@ -41,11 +41,9 @@ app.post("/books", (req, res) => {
 
 app.put("/books/:isbn", (req, res) => {
     const updatedBook = req.body;
-    const isbn = req.params.isbn;
-    const index = books.findIndex(b => b.isbn === isbn);
-    books[index] = updatedBook;
-    res.status(200).send(updatedBook);
-});
+    books.push(updatedBook);
+    res.status(200).send(updatedBook)
+})
 
 app.delete("/books/:isbn", (req, res) => {
     const isbn = req.params.isbn
@@ -83,15 +81,34 @@ app.patch("/books/:isbn", (req, res) => {
   res.status(200).send("Book updated")
 })
 
+app.use(
+	session({
+		secret: "eng33fsdf9g344morefsif38fj84ghhsfdmasndcqwinsandom",
+		resave: false,
+		saveUninitialized: true,
+	})
+);
+
+app.use(express.json())
+
 const lends = []
 
 app.get("/lends", (req, res) => {
-  res.send(lends)
+  if (authenticate(req, res)){
+  res.send(lends)  
+  } else {
+    res.send("Go to /login to login")
+  }
 })
 
 app.get("/lends/:id", (req, res) => {
-  const id = req.params.id
-  res.send(lends.find(l => l.id === id))
+  if (authenticate(req, res)){
+    const id = req.params.id
+    res.send(lends.find(l => l.id === id))
+  } else {
+    res.setHeader("WWW-Authenticate", "Basic realm='staging server'")
+    return res.status(401).send("Not Authorized")
+  }
 })
 
 app.post("/lends", (req, res) => {
@@ -127,6 +144,19 @@ app.delete("/lends/:id", (req, res) => {
   lend.returned_at = new Date().toLocaleDateString("de-CH")
   res.send("Book returned")
 })
+
+app.post("/login", (req, res) => {
+	if (!req.body.email || !req.body.password) {
+		return res.status(422).send('Username and password are required');
+	}
+
+	if (req.body.email === email && req.body.password === password) {
+		req.session.authenticated = true;
+		return res.sendStatus(201);
+	}
+	req.session.authenticated = false;
+	return res.status(401).send('Invalid credentials');
+});
 
 app.listen(port, () => {
     console.log("Port: " + port )
